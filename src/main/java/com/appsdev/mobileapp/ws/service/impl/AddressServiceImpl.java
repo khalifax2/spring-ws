@@ -48,6 +48,8 @@ public class AddressServiceImpl implements AddressService {
     public AddressDTO getAddress(String addressId) {
         AddressEntity addressEntity = addressRepository.findByAddressId(addressId);
 
+        if (addressEntity == null) return null;
+
         AddressDTO returnValue = new ModelMapper().map(addressEntity, AddressDTO.class);
 
         return returnValue;

@@ -8,17 +8,20 @@ import com.appsdev.mobileapp.ws.ui.model.request.UserDetailsRequestModel;
 import com.appsdev.mobileapp.ws.ui.model.response.*;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.TypeToken;
-import org.springframework.beans.BeanUtils;
+import org.springframework.hateoas.CollectionModel;
+import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.Link;
+import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.MediaType;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
-@RequestMapping("users")
+@RequestMapping("/users")
 public class UserController {
 
     private final UserService userService;
@@ -109,7 +112,7 @@ public class UserController {
             path = "/{id}/addresses",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
-    public List<AddressesRest> getUserAddresses(@PathVariable String id) {
+    public CollectionModel<AddressesRest> getUserAddresses(@PathVariable String id) {
 
         List<AddressesRest> returnValue = new ArrayList<>();
         List<AddressDTO> addressesDTO = addressService.getAddresses(id);
@@ -117,19 +120,61 @@ public class UserController {
         if (addressesDTO != null && !addressesDTO.isEmpty()) {
             Type listType = new TypeToken<List<AddressesRest>>() {}.getType();
             returnValue = new ModelMapper().map(addressesDTO, listType);
+
+            for (AddressesRest addressRest: returnValue) {
+                Link selfLink = WebMvcLinkBuilder
+                        .linkTo(WebMvcLinkBuilder.methodOn(UserController.class)
+                        .getUserAddress(id, addressRest.getAddressId()))
+                        .withSelfRel();
+                addressRest.add(selfLink);
+            }
+
         }
 
-        return returnValue;
+        Link userLink = WebMvcLinkBuilder.linkTo(UserController.class).slash(id).withRel("user");
+        Link selfLink = WebMvcLinkBuilder
+                .linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getUserAddresses(id))
+                .withRel("addresses");
+
+        return CollectionModel.of(returnValue, userLink, selfLink) ;
     }
 
     @GetMapping(
             path = "/{userId}/addresses/{addressId}",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
     )
-    public AddressesRest getUserAddress(@PathVariable String addressId) {
+    public EntityModel<AddressesRest> getUserAddress(@PathVariable String userId, @PathVariable String addressId) {
         AddressDTO addressDTO = addressService.getAddress(addressId);
 
         AddressesRest returnValue = new ModelMapper().map(addressDTO, AddressesRest.class);
+
+        // http://localhost:8080/users/<userId>
+        Link userLink = WebMvcLinkBuilder.linkTo(UserController.class).slash(userId).withRel("user");
+        Link userAddressesLink = WebMvcLinkBuilder
+                .linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getUserAddresses(userId))
+                .withRel("addresses");
+        Link selfLink = WebMvcLinkBuilder
+                .linkTo(WebMvcLinkBuilder.methodOn(UserController.class).getUserAddress(userId, addressId))
+                .withSelfRel();
+
+        return EntityModel.of(returnValue, Arrays.asList(userLink, userAddressesLink, selfLink));
+    }
+
+    // http://localhost/mobile-app-ws/users/email-verification?token=awJHs12312
+    @GetMapping(
+            path = "/email-verification",
+            produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
+    )
+    public OperationStatusModel verifyEmailToken(@RequestParam(value = "token") String token) {
+        OperationStatusModel returnValue = new OperationStatusModel();
+
+        returnValue.setOperationName(RequestOperationName.VERIFY_EMAIL.name());
+
+        boolean isVerified = userService.verifyEmailToken(token);
+
+        if (!isVerified) returnValue.setOperationResult(RequestOperationStatus.ERROR.name());
+
+        returnValue.setOperationResult(RequestOperationStatus.SUCCESS.name());
 
         return returnValue;
     }
