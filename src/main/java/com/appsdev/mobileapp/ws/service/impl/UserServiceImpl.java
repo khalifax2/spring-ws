@@ -9,23 +9,16 @@ import com.appsdev.mobileapp.ws.shared.Utils;
 import com.appsdev.mobileapp.ws.shared.dto.AddressDTO;
 import com.appsdev.mobileapp.ws.shared.dto.UserDto;
 import com.appsdev.mobileapp.ws.ui.model.response.ErrorMessages;
-import com.appsdev.mobileapp.ws.ui.model.response.UserRest;
-import org.apache.catalina.mapper.Mapper;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.support.SimpleJpaRepository;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -77,6 +70,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserDto getUser(String email) throws UsernameNotFoundException {
         UserEntity userEntity = userRepository.findByEmail(email);
 
@@ -170,12 +164,11 @@ public class UserServiceImpl implements UserService {
 
         if (userEntity == null) throw new UsernameNotFoundException(email);
 
-//        UserDetails loadUser =  new User(userEntity.getEmail(), userEntity.getEncryptedPassword(),
-//                userEntity.getEmailVerificationStatus(), true, true, true, new ArrayList<>());
-
-        UserDetails loadUser = new User(userEntity.getEmail(), userEntity.getEncryptedPassword(), new ArrayList<>());
+        UserDetails loadUser =  new User(userEntity.getEmail(), userEntity.getEncryptedPassword(),
+                userEntity.getEmailVerificationStatus(), true, true, true, new ArrayList<>());
 
         return loadUser;
+        //        return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(), new ArrayList<>());
     }
 
 

@@ -1,5 +1,7 @@
 package com.appsdev.mobileapp.ws.shared;
 
+import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClientBuilder;
@@ -31,10 +33,6 @@ public class  AmazonSES {
 
 
     public void verifyEmail(UserDto userDto) {
-
-        System.setProperty("aws.accessKeyId", "AKIAXP4M3K32HYUGUL5W");
-        System.setProperty("aws.secretKey", "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");
-
         AmazonSimpleEmailService client = AmazonSimpleEmailServiceClientBuilder.standard().withRegion(Regions.US_EAST_1).build();
 
         String htmlBodyWithToken = HTMLBODY.replace("$tokenValue", userDto.getEmailVerificationToken());
