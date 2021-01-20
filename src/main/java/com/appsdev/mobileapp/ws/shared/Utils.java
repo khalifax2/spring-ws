@@ -2,15 +2,17 @@ package com.appsdev.mobileapp.ws.shared;
 
 import com.appsdev.mobileapp.ws.security.SecurityConstants;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.util.Date;
 import java.util.Random;
 
-@Component
+@Service
 public class Utils {
 
     private final Random RANDOM = new SecureRandom();
@@ -33,21 +35,37 @@ public class Utils {
         return new String(returnValue);
     }
 
-    public static boolean hasTokenExpired(String token) {
-        Claims claims = Jwts.parser()
-                .setSigningKey(SecurityConstants.getTokenSecret())
-                .parseClaimsJws(token).getBody();
+    public boolean hasTokenExpired(String token) {
+       boolean hasExpired = false;
 
-        Date tokenExpirationDate = claims.getExpiration();
-        Date tokenDate = new Date();
+       try {
+           Claims claims = Jwts.parser()
+                   .setSigningKey(SecurityConstants.getTokenSecret())
+                   .parseClaimsJws(token).getBody();
 
-        return tokenExpirationDate.before(tokenDate);
+           Date tokenExpirationDate = claims.getExpiration();
+           Date tokenDate = new Date();
+
+           hasExpired = tokenExpirationDate.before(tokenDate);
+       } catch (ExpiredJwtException e) {
+           hasExpired = true;
+       }
+       return hasExpired;
     }
 
     public String generateEmailVerificationToken(String userId) {
+        return generateToken(userId, new Date(System.currentTimeMillis() + SecurityConstants.EXPIRATION_TIME));
+    }
+
+    public String generatePasswordResetToken(String userId) {
+        return generateToken(userId, new Date(System.currentTimeMillis() + SecurityConstants.PASSWORD_RESET_EXPIRATION_TIME));
+
+    }
+
+    public String generateToken(String userId, Date expiration) {
         String token = Jwts.builder()
                 .setSubject(userId)
-                .setExpiration(new Date(System.currentTimeMillis() + SecurityConstants.EXPIRATION_TIME))
+                .setExpiration(expiration)
                 .signWith(SignatureAlgorithm.HS512, SecurityConstants.getTokenSecret())
                 .compact();
 

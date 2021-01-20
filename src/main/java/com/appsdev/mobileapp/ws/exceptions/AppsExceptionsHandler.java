@@ -22,7 +22,7 @@ public class AppsExceptionsHandler {
     }
 
     @ExceptionHandler(value = { Exception.class })
-    public ResponseEntity<Object> handleOtherExeption(Exception ex, WebRequest request) {
+    public ResponseEntity<Object> handleOtherException(Exception ex, WebRequest request) {
 
         ErrorMessage errorMessage = new ErrorMessage(new Date(), ex.getMessage());
 

@@ -4,6 +4,8 @@ import com.appsdev.mobileapp.ws.service.UserService;
 import com.appsdev.mobileapp.ws.service.AddressService;
 import com.appsdev.mobileapp.ws.shared.dto.AddressDTO;
 import com.appsdev.mobileapp.ws.shared.dto.UserDto;
+import com.appsdev.mobileapp.ws.ui.model.request.PasswordResetModel;
+import com.appsdev.mobileapp.ws.ui.model.request.PasswordResetRequestModel;
 import com.appsdev.mobileapp.ws.ui.model.request.UserDetailsRequestModel;
 import com.appsdev.mobileapp.ws.ui.model.response.*;
 import org.modelmapper.ModelMapper;
@@ -171,8 +173,44 @@ public class UserController {
         returnValue.setOperationName(RequestOperationName.VERIFY_EMAIL.name());
 
         boolean isVerified = userService.verifyEmailToken(token);
-
         if (!isVerified) returnValue.setOperationResult(RequestOperationStatus.ERROR.name());
+
+        returnValue.setOperationResult(RequestOperationStatus.SUCCESS.name());
+
+        return returnValue;
+    }
+
+    @PostMapping(
+            path = "/password-reset-request",
+            produces = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE },
+            consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE }
+    )
+    public OperationStatusModel requestPasswordReset(@RequestBody PasswordResetRequestModel passwordResetRequest) {
+        OperationStatusModel returnValue = new OperationStatusModel();
+
+        boolean operationResult = userService.requestPasswordReset(passwordResetRequest.getEmail());
+
+        returnValue.setOperationName(RequestOperationName.REQUEST_PASSWORD_RESET.name());
+        if (!operationResult) returnValue.setOperationResult(RequestOperationStatus.ERROR.name());
+
+        returnValue.setOperationResult(RequestOperationStatus.SUCCESS.name());
+
+        return returnValue;
+    }
+
+    @PostMapping(
+            path = "/password-reset",
+            consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE }
+    )
+    public OperationStatusModel resetPassword(@RequestBody PasswordResetModel passwordResetModel) {
+        OperationStatusModel returnValue = new OperationStatusModel();
+
+        boolean operationResult = userService.resetPassword(
+                passwordResetModel.getToken(),
+                passwordResetModel.getPassword());
+
+        returnValue.setOperationName(RequestOperationName.PASSWORD_RESET.name());
+        if (!operationResult) returnValue.setOperationResult(RequestOperationStatus.ERROR.name());
 
         returnValue.setOperationResult(RequestOperationStatus.SUCCESS.name());
 
