@@ -35,6 +35,8 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
                 .permitAll()
                 .antMatchers(HttpMethod.POST, SecurityConstants.PASSWORD_RESET_URL)
                 .permitAll()
+                .antMatchers(SecurityConstants.H2_CONSOLE)
+                .permitAll()
                 .anyRequest()
                 .authenticated()
                 .and()
@@ -43,6 +45,8 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 //                .addFilter(new AuthenticationFilter(authenticationManager())); Note: default /login
+
+        http.headers().frameOptions().disable();
     }
 
     @Override
