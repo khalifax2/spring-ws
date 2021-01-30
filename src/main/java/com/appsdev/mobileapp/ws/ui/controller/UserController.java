@@ -2,6 +2,7 @@ package com.appsdev.mobileapp.ws.ui.controller;
 
 import com.appsdev.mobileapp.ws.service.UserService;
 import com.appsdev.mobileapp.ws.service.AddressService;
+import com.appsdev.mobileapp.ws.shared.Roles;
 import com.appsdev.mobileapp.ws.shared.dto.AddressDTO;
 import com.appsdev.mobileapp.ws.shared.dto.UserDto;
 import com.appsdev.mobileapp.ws.ui.model.request.PasswordResetModel;
@@ -15,11 +16,16 @@ import org.springframework.hateoas.EntityModel;
 import org.springframework.hateoas.Link;
 import org.springframework.hateoas.server.mvc.WebMvcLinkBuilder;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.annotation.Secured;
+import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 @RestController
@@ -35,6 +41,8 @@ public class UserController {
         this.addressService = addressService;
     }
 
+    @PostAuthorize("hasRole('ADMIN') or returnObject.userId == principal.userId")
+//    @PostAuthorize("returnObject.userId == principal.userId")
     @GetMapping(
             path = "/{id}",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
@@ -58,6 +66,8 @@ public class UserController {
 
         ModelMapper modelMapper = new ModelMapper();
         UserDto userDto = modelMapper.map(userDetails, UserDto.class);
+        userDto.setRoles(new HashSet<>(Arrays.asList(Roles.ROLE_USER.name())));
+
         UserDto createdUser = userService.createUser(userDto);
         UserRest returnValue = modelMapper.map(createdUser, UserRest.class);
 
@@ -80,6 +90,9 @@ public class UserController {
         return returnValue;
     }
 
+//    @Secured("ROLE_ADMIN")
+//    @PreAuthorize("hasAuthority('DELETE_AUTHORITY')")
+    @PreAuthorize("hasRole('ADMIN') or #id == principal.userId")
     @DeleteMapping(
             path = "/{id}",
             produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}
