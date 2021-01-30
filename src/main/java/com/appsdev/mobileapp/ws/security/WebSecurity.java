@@ -1,11 +1,13 @@
 package com.appsdev.mobileapp.ws.security;
 
+import com.appsdev.mobileapp.ws.io.entity.repository.UserRepository;
 import com.appsdev.mobileapp.ws.service.UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -19,15 +21,19 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
+@EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
 @EnableWebSecurity
 public class WebSecurity extends WebSecurityConfigurerAdapter {
 
     private final UserService UserService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final UserRepository userRepository;
 
-    public WebSecurity(UserService UserService, BCryptPasswordEncoder bCryptPasswordEncoder) {
+
+    public WebSecurity(UserService UserService, BCryptPasswordEncoder bCryptPasswordEncoder, UserRepository userRepository) {
         this.UserService = UserService;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -46,10 +52,10 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
             .permitAll()
             .antMatchers(SecurityConstants.H2_CONSOLE)
             .permitAll()
-            .anyRequest().authenticated()
-            .and()
+//            .antMatchers(HttpMethod.DELETE, "/users/**").hasRole("ADMIN")
+            .anyRequest().authenticated().and()
             .addFilter(getAuthenticationFilter())
-            .addFilter(new AuthorizationFilter(authenticationManager()))
+            .addFilter(new AuthorizationFilter(authenticationManager(), userRepository))
             .sessionManagement()
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
 //                .addFilter(new AuthenticationFilter(authenticationManager())); Note: default /login
