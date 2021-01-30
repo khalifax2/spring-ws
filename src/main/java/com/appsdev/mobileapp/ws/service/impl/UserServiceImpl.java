@@ -2,9 +2,12 @@ package com.appsdev.mobileapp.ws.service.impl;
 
 import com.appsdev.mobileapp.ws.exceptions.UserServiceException;
 import com.appsdev.mobileapp.ws.io.entity.PasswordResetTokenEntity;
+import com.appsdev.mobileapp.ws.io.entity.RoleEntity;
 import com.appsdev.mobileapp.ws.io.entity.UserEntity;
 import com.appsdev.mobileapp.ws.io.entity.repository.PasswordResetTokenRepository;
+import com.appsdev.mobileapp.ws.io.entity.repository.RoleRepository;
 import com.appsdev.mobileapp.ws.io.entity.repository.UserRepository;
+import com.appsdev.mobileapp.ws.security.UserPrincipal;
 import com.appsdev.mobileapp.ws.service.UserService;
 import com.appsdev.mobileapp.ws.shared.AmazonSES;
 import com.appsdev.mobileapp.ws.shared.Utils;
@@ -22,7 +25,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 
 @Service
@@ -33,14 +39,17 @@ public class UserServiceImpl implements UserService {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final AmazonSES amazonSES;
+    private final RoleRepository roleRepository;
 
     public UserServiceImpl(UserRepository userRepository, Utils utils, BCryptPasswordEncoder bCryptPasswordEncoder,
-                           PasswordResetTokenRepository passwordResetTokenRepository, AmazonSES amazonSES) {
+                           PasswordResetTokenRepository passwordResetTokenRepository, AmazonSES amazonSES,
+                           RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.utils = utils;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.amazonSES = amazonSES;
+        this.roleRepository = roleRepository;
     }
 
     @Override
@@ -65,6 +74,16 @@ public class UserServiceImpl implements UserService {
         userEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(user.getPassword()));
         userEntity.setEmailVerificationToken(utils.generateEmailVerificationToken(publicUserId));
         userEntity.setEmailVerificationStatus(false);
+
+        // Set roles
+        Collection<RoleEntity> roleEntities = new HashSet<>();
+
+        for (String role : user.getRoles()) {
+            RoleEntity roleEntity = roleRepository.findByName(role);
+            if (roleEntity != null) roleEntities.add(roleEntity);
+        }
+
+        userEntity.setRoles(roleEntities);
 
         storedUserDetails = userRepository.save(userEntity);
 
@@ -221,11 +240,12 @@ public class UserServiceImpl implements UserService {
 
         if (userEntity == null) throw new UsernameNotFoundException(email);
 
-        UserDetails loadUser =  new User(userEntity.getEmail(), userEntity.getEncryptedPassword(),
-                userEntity.getEmailVerificationStatus(), true, true, true, new ArrayList<>());
+        return new UserPrincipal(userEntity);
 
-        return loadUser;
-        //        return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(), new ArrayList<>());
+//        return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(),
+//                userEntity.getEmailVerificationStatus(), true, true, true, new ArrayList<>());
+//
+//        return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(), new ArrayList<>());
     }
 
 
