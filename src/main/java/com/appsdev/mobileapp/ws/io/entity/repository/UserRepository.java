@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@Repository
+//@Repository
 public interface UserRepository extends PagingAndSortingRepository<UserEntity, Long> {
     UserEntity findByEmail(String email);
     UserEntity findByUserId(String userId);

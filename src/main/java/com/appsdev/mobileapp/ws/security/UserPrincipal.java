@@ -26,7 +26,7 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-
+        // role
         Collection<GrantedAuthority> authorities = new HashSet<>();
         Collection<AuthorityEntity> authorityEntities = new HashSet<>();
 
@@ -40,7 +40,8 @@ public class UserPrincipal implements UserDetails {
             authorityEntities.addAll(role.getAuthorities());
         });
 
-        authorityEntities.forEach(authority -> authorities.add(new SimpleGrantedAuthority(authority.getName())));
+        authorityEntities.forEach(
+                authority -> authorities.add(new SimpleGrantedAuthority(authority.getName())));
 
         return authorities;
     }
